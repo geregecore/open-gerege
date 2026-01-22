@@ -1,218 +1,172 @@
--- +goose Up
--- +goose StatementBegin
-SET search_path TO template_backend;
+-- ============================================================
+-- Migration: 002_core_tables.sql
+-- Description: Core system tables (systems, actions, modules, permissions, roles, menus)
+-- Database: gerege_db
+-- Schema: template_backend
+-- ============================================================
 
--- ============================================
--- SYSTEMS TABLE (domain/system.go)
--- ============================================
+SET search_path TO template_backend, public;
+
+-- ============================================================
+-- SYSTEMS TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS systems (
     id              SERIAL PRIMARY KEY,
-    code            VARCHAR(255) UNIQUE,
-    key             VARCHAR(255),
-    name            VARCHAR(255),
-    description     VARCHAR(255),
+    name            VARCHAR(100) NOT NULL,
+    code            VARCHAR(50) UNIQUE NOT NULL,
+    description     TEXT,
+    base_url        VARCHAR(255),
     is_active       BOOLEAN DEFAULT TRUE,
-    icon            VARCHAR(255),
-    sequence        INTEGER DEFAULT 0,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    deleted_date    TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_systems_deleted ON systems(deleted_date);
 
--- Triggers
-DROP TRIGGER IF EXISTS trg_systems_ins ON systems;
-CREATE TRIGGER trg_systems_ins BEFORE INSERT ON systems FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_systems_upd ON systems;
-CREATE TRIGGER trg_systems_upd BEFORE UPDATE ON systems FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_systems_code ON systems(code);
+CREATE INDEX idx_systems_is_active ON systems(is_active);
 
--- ============================================
--- ACTIONS TABLE (domain/action.go)
--- ============================================
+SELECT create_audit_triggers('systems');
+
+-- ============================================================
+-- ACTIONS TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS actions (
-    id              BIGSERIAL PRIMARY KEY,
-    code            VARCHAR(255) UNIQUE NOT NULL,
-    name            VARCHAR(255),
-    description     VARCHAR(255),
-    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    code            VARCHAR(50) UNIQUE NOT NULL,
+    description     TEXT,
+    http_method     VARCHAR(10),
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    deleted_date    TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_actions_deleted ON actions(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_actions_ins ON actions;
-CREATE TRIGGER trg_actions_ins BEFORE INSERT ON actions FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_actions_upd ON actions;
-CREATE TRIGGER trg_actions_upd BEFORE UPDATE ON actions FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_actions_code ON actions(code);
 
--- ============================================
--- MODULES TABLE (domain/module.go)
--- ============================================
+SELECT create_audit_triggers('actions');
+
+-- ============================================================
+-- MODULES TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS modules (
     id              SERIAL PRIMARY KEY,
-    code            VARCHAR(255) UNIQUE,
-    name            VARCHAR(255),
-    description     VARCHAR(255),
+    system_id       INTEGER NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
+    parent_id       INTEGER REFERENCES modules(id) ON DELETE SET NULL,
+    name            VARCHAR(100) NOT NULL,
+    code            VARCHAR(100) NOT NULL,
+    description     TEXT,
+    icon            VARCHAR(50),
+    sort_order      INTEGER DEFAULT 0,
     is_active       BOOLEAN DEFAULT TRUE,
-    system_id       INTEGER REFERENCES systems(id) ON UPDATE CASCADE ON DELETE SET NULL,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
     deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    UNIQUE(system_id, code)
 );
-CREATE INDEX IF NOT EXISTS idx_modules_system ON modules(system_id);
-CREATE INDEX IF NOT EXISTS idx_modules_deleted ON modules(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_modules_ins ON modules;
-CREATE TRIGGER trg_modules_ins BEFORE INSERT ON modules FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_modules_upd ON modules;
-CREATE TRIGGER trg_modules_upd BEFORE UPDATE ON modules FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_modules_system_id ON modules(system_id);
+CREATE INDEX idx_modules_parent_id ON modules(parent_id);
+CREATE INDEX idx_modules_code ON modules(code);
+CREATE INDEX idx_modules_is_active ON modules(is_active);
 
--- ============================================
--- PERMISSIONS TABLE (domain/permission.go)
--- ============================================
+SELECT create_audit_triggers('modules');
+
+-- ============================================================
+-- PERMISSIONS TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS permissions (
     id              SERIAL PRIMARY KEY,
-    code            VARCHAR(255) UNIQUE NOT NULL,
-    name            VARCHAR(255),
-    description     VARCHAR(255),
-    system_id       INTEGER REFERENCES systems(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    module_id       INTEGER REFERENCES modules(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    action_id       BIGINT REFERENCES actions(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
-    updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS idx_permissions_system ON permissions(system_id);
-CREATE INDEX IF NOT EXISTS idx_permissions_module ON permissions(module_id);
-CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action_id);
-CREATE INDEX IF NOT EXISTS idx_permissions_deleted ON permissions(deleted_date);
-
-DROP TRIGGER IF EXISTS trg_permissions_ins ON permissions;
-CREATE TRIGGER trg_permissions_ins BEFORE INSERT ON permissions FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_permissions_upd ON permissions;
-CREATE TRIGGER trg_permissions_upd BEFORE UPDATE ON permissions FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
-
--- ============================================
--- MENUS TABLE (domain/menu.go)
--- ============================================
-CREATE TABLE IF NOT EXISTS menus (
-    id              BIGSERIAL PRIMARY KEY,
-    code            VARCHAR(255),
-    key             VARCHAR(255) UNIQUE,
-    name            VARCHAR(255),
-    description     VARCHAR(255),
-    icon            VARCHAR(255),
-    path            VARCHAR(255),
-    sequence        BIGINT DEFAULT 0,
-    parent_id       BIGINT REFERENCES menus(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    permission_id   BIGINT REFERENCES permissions(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    module_id       INTEGER NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+    action_id       INTEGER NOT NULL REFERENCES actions(id) ON DELETE CASCADE,
+    name            VARCHAR(150) NOT NULL,
+    code            VARCHAR(150) NOT NULL,
+    description     TEXT,
+    resource_path   VARCHAR(255),
     is_active       BOOLEAN DEFAULT TRUE,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
     deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    UNIQUE(module_id, action_id)
 );
-CREATE INDEX IF NOT EXISTS idx_menus_parent ON menus(parent_id);
-CREATE INDEX IF NOT EXISTS idx_menus_permission ON menus(permission_id);
-CREATE INDEX IF NOT EXISTS idx_menus_deleted ON menus(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_menus_ins ON menus;
-CREATE TRIGGER trg_menus_ins BEFORE INSERT ON menus FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_menus_upd ON menus;
-CREATE TRIGGER trg_menus_upd BEFORE UPDATE ON menus FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_permissions_module_id ON permissions(module_id);
+CREATE INDEX idx_permissions_action_id ON permissions(action_id);
+CREATE INDEX idx_permissions_code ON permissions(code);
+CREATE INDEX idx_permissions_is_active ON permissions(is_active);
 
--- ============================================
--- ROLES TABLE (domain/role.go)
--- ============================================
+SELECT create_audit_triggers('permissions');
+
+-- ============================================================
+-- ROLES TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS roles (
     id              SERIAL PRIMARY KEY,
-    system_id       INTEGER REFERENCES systems(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    code            VARCHAR(255) UNIQUE NOT NULL,
-    name            VARCHAR(255) NOT NULL,
-    description     VARCHAR(255),
-    is_active       BOOLEAN DEFAULT TRUE,
+    system_id       INTEGER NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
+    name            VARCHAR(100) NOT NULL,
+    code            VARCHAR(50) NOT NULL,
+    description     TEXT,
     is_system_role  BOOLEAN DEFAULT FALSE,
+    is_active       BOOLEAN DEFAULT TRUE,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
     deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    UNIQUE(system_id, code)
 );
-CREATE INDEX IF NOT EXISTS idx_roles_system ON roles(system_id);
-CREATE INDEX IF NOT EXISTS idx_roles_deleted ON roles(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_roles_ins ON roles;
-CREATE TRIGGER trg_roles_ins BEFORE INSERT ON roles FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_roles_upd ON roles;
-CREATE TRIGGER trg_roles_upd BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_roles_system_id ON roles(system_id);
+CREATE INDEX idx_roles_code ON roles(code);
+CREATE INDEX idx_roles_is_active ON roles(is_active);
 
--- ============================================
--- ROLE_PERMISSIONS TABLE (domain/role.go)
--- ============================================
+SELECT create_audit_triggers('roles');
+
+-- ============================================================
+-- ROLE_PERMISSIONS TABLE (Many-to-Many)
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id         INTEGER NOT NULL REFERENCES roles(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    permission_id   INTEGER NOT NULL REFERENCES permissions(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    id              SERIAL PRIMARY KEY,
+    role_id         INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id   INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0,
-    PRIMARY KEY (role_id, permission_id)
+    UNIQUE(role_id, permission_id)
 );
-CREATE INDEX IF NOT EXISTS idx_role_permissions_deleted ON role_permissions(deleted_date);
 
--- Reset search_path for goose
-RESET search_path;
+CREATE INDEX idx_role_permissions_role_id ON role_permissions(role_id);
+CREATE INDEX idx_role_permissions_permission_id ON role_permissions(permission_id);
 
--- +goose StatementEnd
+SELECT create_audit_triggers('role_permissions');
 
--- +goose Down
--- +goose StatementBegin
-SET search_path TO template_backend;
-DROP TABLE IF EXISTS role_permissions CASCADE;
-DROP TABLE IF EXISTS roles CASCADE;
-DROP TABLE IF EXISTS menus CASCADE;
-DROP TABLE IF EXISTS permissions CASCADE;
-DROP TABLE IF EXISTS modules CASCADE;
-DROP TABLE IF EXISTS actions CASCADE;
-DROP TABLE IF EXISTS systems CASCADE;
--- +goose StatementEnd
+-- ============================================================
+-- MENUS TABLE
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS menus (
+    id              SERIAL PRIMARY KEY,
+    system_id       INTEGER NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
+    parent_id       INTEGER REFERENCES menus(id) ON DELETE SET NULL,
+    module_id       INTEGER REFERENCES modules(id) ON DELETE SET NULL,
+    name            VARCHAR(100) NOT NULL,
+    code            VARCHAR(100) NOT NULL,
+    icon            VARCHAR(50),
+    url             VARCHAR(255),
+    sort_order      INTEGER DEFAULT 0,
+    is_visible      BOOLEAN DEFAULT TRUE,
+    is_active       BOOLEAN DEFAULT TRUE,
+    created_date    TIMESTAMPTZ DEFAULT NOW(),
+    updated_date    TIMESTAMPTZ DEFAULT NOW(),
+    deleted_date    TIMESTAMPTZ,
+    UNIQUE(system_id, code)
+);
+
+CREATE INDEX idx_menus_system_id ON menus(system_id);
+CREATE INDEX idx_menus_parent_id ON menus(parent_id);
+CREATE INDEX idx_menus_module_id ON menus(module_id);
+CREATE INDEX idx_menus_is_active ON menus(is_active);
+
+SELECT create_audit_triggers('menus');

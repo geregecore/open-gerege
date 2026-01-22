@@ -1,124 +1,105 @@
--- +goose Up
--- +goose StatementBegin
-SET search_path TO template_backend;
+-- ============================================================
+-- Migration: 003_user_tables.sql
+-- Description: User tables (users, citizens, user_roles)
+-- Database: gerege_db
+-- Schema: template_backend
+-- ============================================================
 
--- ============================================
--- CITIZENS TABLE (domain/citizen.go)
--- ============================================
+SET search_path TO template_backend, public;
+
+-- ============================================================
+-- CITIZENS TABLE (Иргэний мэдээлэл - ДАН-аас)
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS citizens (
     id                  SERIAL PRIMARY KEY,
-    civil_id            BIGINT DEFAULT 0,
-    reg_no              VARCHAR(10),
-    family_name         VARCHAR(80),
-    last_name           VARCHAR(150),
+    register_number     VARCHAR(20) UNIQUE,
     first_name          VARCHAR(150),
-    gender              INTEGER DEFAULT 0,
-    birth_date          VARCHAR(10),
-    phone_no            VARCHAR(8),
-    email               VARCHAR(80),
-    is_foreign          INTEGER DEFAULT 0,
-    country_code        VARCHAR(3),
-    hash                VARCHAR(200),
-    parent_address_id   INTEGER DEFAULT 0,
-    parent_address_name VARCHAR(20),
-    aimag_id            INTEGER DEFAULT 0,
-    aimag_code          VARCHAR(3),
-    aimag_name          VARCHAR(255),
-    sum_id              INTEGER DEFAULT 0,
-    sum_code            VARCHAR(3),
-    sum_name            VARCHAR(255),
-    bag_id              INTEGER DEFAULT 0,
-    bag_code            VARCHAR(3),
-    bag_name            VARCHAR(255),
-    address_detail      VARCHAR(255),
-    address_type        VARCHAR(255),
-    address_type_name   VARCHAR(255),
-    nationality         VARCHAR(255),
-    country_name        VARCHAR(255),
-    country_name_en     VARCHAR(255),
-    profile_img_url     VARCHAR(255),
+    last_name           VARCHAR(150),
+    surname             VARCHAR(150),
+    date_of_birth       DATE,
+    gender              VARCHAR(10),
+    nationality         VARCHAR(50),
+    aimagcity_name      VARCHAR(100),
+    soum_name           VARCHAR(100),
+    bag_name            VARCHAR(100),
+    address_detail      TEXT,
+    passport_number     VARCHAR(50),
+    passport_issue_date DATE,
+    passport_expiry_date DATE,
+    photo_base64        TEXT,
+    dan_verified        BOOLEAN DEFAULT FALSE,
+    dan_verified_at     TIMESTAMPTZ,
+    dan_raw_data        JSONB,
     created_date        TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id     INTEGER DEFAULT 0,
-    created_org_id      INTEGER DEFAULT 0,
     updated_date        TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id     INTEGER DEFAULT 0,
-    updated_org_id      INTEGER DEFAULT 0,
-    deleted_date        TIMESTAMPTZ,
-    deleted_user_id     INTEGER DEFAULT 0,
-    deleted_org_id      INTEGER DEFAULT 0
+    deleted_date        TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_citizens_reg_no ON citizens(reg_no);
-CREATE INDEX IF NOT EXISTS idx_citizens_deleted ON citizens(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_citizens_ins ON citizens;
-CREATE TRIGGER trg_citizens_ins BEFORE INSERT ON citizens FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_citizens_upd ON citizens;
-CREATE TRIGGER trg_citizens_upd BEFORE UPDATE ON citizens FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_citizens_register_number ON citizens(register_number);
+CREATE INDEX idx_citizens_first_name ON citizens(first_name);
+CREATE INDEX idx_citizens_last_name ON citizens(last_name);
 
--- ============================================
--- USERS TABLE (domain/user.go)
--- ============================================
+SELECT create_audit_triggers('citizens');
+
+-- ============================================================
+-- USERS TABLE
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS users (
-    id              SERIAL PRIMARY KEY,
-    civil_id        BIGINT DEFAULT 0,
-    reg_no          VARCHAR(10),
-    family_name     VARCHAR(80),
-    last_name       VARCHAR(150),
-    first_name      VARCHAR(150),
-    gender          INTEGER DEFAULT 0,
-    birth_date      VARCHAR(10),
-    phone_no        VARCHAR(8),
-    email           VARCHAR(80),
-    created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
-    updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0
+    id                  SERIAL PRIMARY KEY,
+    citizen_id          INTEGER REFERENCES citizens(id) ON DELETE SET NULL,
+    email               VARCHAR(255) UNIQUE NOT NULL,
+    phone               VARCHAR(20),
+    first_name          VARCHAR(150) NOT NULL,
+    last_name           VARCHAR(150) NOT NULL,
+    avatar_url          VARCHAR(500),
+    language            VARCHAR(10) DEFAULT 'mn',
+    timezone            VARCHAR(50) DEFAULT 'Asia/Ulaanbaatar',
+    status              VARCHAR(50) DEFAULT 'pending_verification',
+    email_verified      BOOLEAN DEFAULT FALSE,
+    email_verified_at   TIMESTAMPTZ,
+    phone_verified      BOOLEAN DEFAULT FALSE,
+    phone_verified_at   TIMESTAMPTZ,
+    last_login_at       TIMESTAMPTZ,
+    last_login_ip       VARCHAR(45),
+    failed_login_count  INTEGER DEFAULT 0,
+    locked_until        TIMESTAMPTZ,
+    created_date        TIMESTAMPTZ DEFAULT NOW(),
+    updated_date        TIMESTAMPTZ DEFAULT NOW(),
+    deleted_date        TIMESTAMPTZ,
+    CONSTRAINT chk_user_status CHECK (status IN ('pending_verification', 'active', 'inactive', 'suspended', 'locked'))
 );
-CREATE INDEX IF NOT EXISTS idx_users_reg_no ON users(reg_no);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_deleted ON users(deleted_date);
 
-DROP TRIGGER IF EXISTS trg_users_ins ON users;
-CREATE TRIGGER trg_users_ins BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION set_timestamps_on_insert();
-DROP TRIGGER IF EXISTS trg_users_upd ON users;
-CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_date_timestamp();
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_phone ON users(phone);
+CREATE INDEX idx_users_citizen_id ON users(citizen_id);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_deleted_date ON users(deleted_date);
 
--- ============================================
--- USER_ROLES TABLE (domain/user.go)
--- ============================================
+SELECT create_audit_triggers('users');
+
+-- ============================================================
+-- USER_ROLES TABLE (Many-to-Many)
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id         INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    role_id         INTEGER NOT NULL REFERENCES roles(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id         INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    organization_id INTEGER,
+    assigned_by     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    assigned_at     TIMESTAMPTZ DEFAULT NOW(),
+    expires_at      TIMESTAMPTZ,
+    is_active       BOOLEAN DEFAULT TRUE,
     created_date    TIMESTAMPTZ DEFAULT NOW(),
-    created_user_id INTEGER DEFAULT 0,
-    created_org_id  INTEGER DEFAULT 0,
     updated_date    TIMESTAMPTZ DEFAULT NOW(),
-    updated_user_id INTEGER DEFAULT 0,
-    updated_org_id  INTEGER DEFAULT 0,
-    deleted_date    TIMESTAMPTZ,
-    deleted_user_id INTEGER DEFAULT 0,
-    deleted_org_id  INTEGER DEFAULT 0,
-    PRIMARY KEY (user_id, role_id)
+    UNIQUE(user_id, role_id, organization_id)
 );
-CREATE INDEX IF NOT EXISTS idx_user_roles_deleted ON user_roles(deleted_date);
 
--- Reset search_path for goose
-RESET search_path;
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
+CREATE INDEX idx_user_roles_organization_id ON user_roles(organization_id);
+CREATE INDEX idx_user_roles_is_active ON user_roles(is_active);
 
--- +goose StatementEnd
-
--- +goose Down
--- +goose StatementBegin
-SET search_path TO template_backend;
-DROP TABLE IF EXISTS user_roles CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS citizens CASCADE;
--- Reset search_path for goose
-RESET search_path;
-
--- +goose StatementEnd
+SELECT create_audit_triggers('user_roles');
