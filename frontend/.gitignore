@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# misc generated files
+doc.json
+
+# old/deprecated code
+/old_frontend
