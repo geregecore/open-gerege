@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-const BACKEND_BASE = process.env.API_PROXY_TARGET || 'http://localhost:8000'
+const BACKEND_BASE = process.env.API_PROXY_TARGET || 'http://localhost:8080'
 
 export async function GET(request: NextRequest) {
     const sid = request.nextUrl.searchParams.get('sid')

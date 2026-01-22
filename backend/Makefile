@@ -142,7 +142,7 @@ docker-build: ## Build docker image
 	docker build -t $(APP):$(VERSION) .
 
 docker-run: ## Run docker container
-	docker run --rm -p 8000:8000 --env-file .env $(APP):$(VERSION)
+	docker run --rm -p 8080:8080 --env-file .env $(APP):$(VERSION)
 
 # ===================== Migrations =====================
 GOBIN_PATH := $(shell go env GOBIN)

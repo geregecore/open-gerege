@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-ARG BACKEND_URL=http://localhost:8000
+ARG BACKEND_URL=http://localhost:8080
 ENV BACKEND_URL=$BACKEND_URL
 
 COPY package.json package-lock.json ./

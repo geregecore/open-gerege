@@ -93,9 +93,9 @@ docker-compose up -d
 ```
 
 After startup:
-- Backend API: http://localhost:8000
-- Frontend: http://localhost:2000
-- Swagger UI: http://localhost:8000/swagger/index.html
+- Backend API: http://localhost:8080
+- Frontend: http://localhost:3000
+- Swagger UI: http://localhost:8080/swagger/index.html
 
 ### Manual Installation
 
@@ -161,7 +161,7 @@ npm run type-check    # TypeScript check
 When the server is running, access Swagger UI at:
 
 ```
-http://localhost:8000/swagger/index.html
+http://localhost:8080/swagger/index.html
 ```
 
 ## Contributing

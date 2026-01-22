@@ -129,9 +129,9 @@ docker-compose up -d
 ```
 
 Үүний дараа:
-- Backend API: http://localhost:8000
-- Frontend: http://localhost:2000
-- Swagger UI: http://localhost:8000/swagger/index.html
+- Backend API: http://localhost:8080
+- Frontend: http://localhost:3000
+- Swagger UI: http://localhost:8080/swagger/index.html
 
 ### Гараар суулгах
 
@@ -197,7 +197,7 @@ npm run type-check    # TypeScript шалгах
 Server ажиллаж байх үед Swagger UI-г дараах хаягаар үзнэ:
 
 ```
-http://localhost:8000/swagger/index.html
+http://localhost:8080/swagger/index.html
 ```
 
 ## Хувь нэмэр оруулах

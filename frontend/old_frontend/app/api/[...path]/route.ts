@@ -22,7 +22,7 @@ const getApiBase = () => {
 
   // Local development fallback
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000/api/v1'
+    return 'http://localhost:8080/api/v1'
   }
 
   return 'https://template.gerege.mn/api/v1'

@@ -92,7 +92,7 @@ make migrate          # Database migration
 ```env
 # Server
 SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
+SERVER_PORT=8080
 ENV=development
 
 # Database

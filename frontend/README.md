@@ -88,7 +88,7 @@ npm install
 npm run dev
 ```
 
-Хөтөч дээр http://localhost:2000 хаягаар нээнэ.
+Хөтөч дээр http://localhost:3000 хаягаар нээнэ.
 
 ### Бусад командууд
 
@@ -187,7 +187,7 @@ export const registerSchema = z.object({
 
 ```typescript
 // lib/api-client.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export const apiClient = {
   async get<T>(endpoint: string): Promise<T> {
@@ -249,11 +249,11 @@ export function middleware(request: NextRequest) {
 
 ```env
 # API
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8080
 
 # App
 NEXT_PUBLIC_APP_NAME=Open-Gerege
-NEXT_PUBLIC_APP_URL=http://localhost:2000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ## Styling

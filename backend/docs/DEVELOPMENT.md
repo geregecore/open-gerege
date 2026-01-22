@@ -30,7 +30,7 @@ make migrate
 make run
 ```
 
-The server will be available at `http://localhost:8000`.
+The server will be available at `http://localhost:8080`.
 
 ## Development Commands
 
@@ -348,7 +348,7 @@ func (h *UserHandler) Create(c *fiber.Ctx) error {
 make swagger
 ```
 
-Access Swagger UI at: `http://localhost:8000/docs`
+Access Swagger UI at: `http://localhost:8080/docs`
 
 ## Troubleshooting
 

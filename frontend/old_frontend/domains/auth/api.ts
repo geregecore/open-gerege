@@ -48,7 +48,7 @@ export async function checkSession(): Promise<boolean> {
 export const SSO_CONFIG = {
   origin: process.env.NEXT_PUBLIC_SSO_ORIGIN || 'https://sso.gerege.mn',
   clientId: process.env.NEXT_PUBLIC_SSO_CLIENT_ID || 'GRG-CLI-01KCGT4564YJ6WM15VNP3Y1BFG',
-  redirectUri: process.env.NEXT_PUBLIC_SSO_REDIRECT_URI || 'http://localhost:2000',
+  redirectUri: process.env.NEXT_PUBLIC_SSO_REDIRECT_URI || 'http://localhost:3000',
 } as const
 
 /**

@@ -44,10 +44,10 @@ function CallbackContent() {
 
                 // If the backend /auth/login -> SSO -> /auth/callback flow happened,
                 // The backend /auth/callback ALREADY set the cookie (if on same domain).
-                // But we are on localhost:2000 vs localhost:8000.
-                // Cookies on localhost:8000 (backend) are NOT visible to localhost:2000 (frontend).
+                // But we are on localhost:3000 vs localhost:8080.
+                // Cookies on localhost:8080 (backend) are NOT visible to localhost:3000 (frontend).
 
-                // So we MUST use the sid to set cookie on localhost:2000.
+                // So we MUST use the sid to set cookie on localhost:3000.
                 // We do this by hitting our Next.js API route /api/auth/verify?sid=...
                 // which Proxies to Backend /auth/verify?sid=...
                 // Backend Verify returns Set-Cookie.
