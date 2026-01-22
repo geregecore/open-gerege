@@ -39,11 +39,12 @@ async function fetchWrapper<T>(endpoint: string, config: RequestConfig = {}): Pr
     const data = await response.json();
 
     if (!response.ok) {
-        // If 401, maybe clear token?
+        // If 401, clear tokens and redirect to login
         if (response.status === 401 && typeof window !== 'undefined') {
-            // console.warn("401 Unauthorized, clearing token");
-            // Cookies.remove('token');
-            // localStorage.removeItem('access_token');
+            Cookies.remove('token');
+            localStorage.removeItem('access_token');
+            // Optionally redirect to login
+            // window.location.href = '/login';
         }
         throw new Error(data.message || 'Something went wrong');
     }

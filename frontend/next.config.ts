@@ -1,20 +1,30 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow images for profile picture (generic pattern or specific domain if known)
+  output: 'standalone',
+  // Allow images from trusted domains
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: '*.gerege.mn',
+      },
+      {
+        protocol: 'https',
+        hostname: 'sso.gerege.mn',
+      },
+      {
+        protocol: 'https',
+        hostname: 'core.gerege.mn',
       },
     ],
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:8000/:path*', // Proxy to backend, stripping /api/v1
+        destination: `${backendUrl}/:path*`, // Proxy to backend, stripping /api/v1
       },
     ];
   },

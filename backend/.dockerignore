@@ -1,0 +1,10 @@
+.git
+.github
+*.md
+Dockerfile*
+docker-compose*
+.env*
+tmp/
+bin/
+tests/
+docs/*.md
