@@ -1,91 +1,93 @@
-# Template Backend API
+# Open-Gerege Backend API
 
-![CI](https://github.com/gerege-core/backend-refactor-v25/actions/workflows/ci.yml/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/git.gerege.mn/backend-packages/template-v25)](https://goreportcard.com/report/git.gerege.mn/backend-packages/template-v25)
+[![Go Version](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org/)
+[![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7.svg)](https://gofiber.io/)
 
-Go backend API template built with Clean Architecture principles using Fiber v2, GORM, and PostgreSQL. Now world-class with automated CI/CD and observability.
+Clean Architecture зарчмаар бүтээгдсэн, өндөр гүйцэтгэлтэй Go backend API.
 
-## Features
+## Онцлог
 
-- **Clean Architecture**: Domain-driven design with clear separation of concerns
-- **Fiber v2**: High-performance web framework
-- **GORM**: ORM with PostgreSQL support
-- **SSO Integration**: Single Sign-On with session caching
-- **RBAC**: Role-Based Access Control
-- **Observability**: OpenTelemetry tracing & Prometheus metrics
-- **Integration Testing**: Ephemeral databases using Testcontainers
-- **CI/CD**: GitHub Actions pipeline with strict linting & security checks
-- **Swagger**: Auto-generated API documentation
-- **Structured Logging**: Zap logger with request ID propagation
-- **Security Headers**: CSP, CORS, rate limiting
-- **Graceful Shutdown**: Clean resource cleanup
+- **Clean Architecture** - Domain-driven design, тодорхой хуваагдсан давхаргууд
+- **Fiber v2** - Өндөр гүйцэтгэлтэй вэб framework
+- **GORM** - PostgreSQL дэмжлэгтэй ORM
+- **SSO интеграци** - Session caching-тэй Single Sign-On
+- **Локал нэвтрэлт** - Email/password + MFA/TOTP
+- **RBAC** - Role-Based Access Control
+- **Observability** - OpenTelemetry tracing & Prometheus metrics
+- **Integration Testing** - Testcontainers ашигласан тестүүд
+- **CI/CD** - GitHub Actions pipeline
+- **Swagger** - Автомат API баримтжуулалт
+- **Structured Logging** - Zap logger, request ID дамжуулалт
+- **Security Headers** - CSP, CORS, rate limiting
+- **Graceful Shutdown** - Цэвэр resource cleanup
 
-## Project Structure
+## Төслийн бүтэц
 
 ```
-.
+backend/
 ├── cmd/
 │   └── server/
-│       └── main.go          # Application entry point
+│       └── main.go              # Аппликейшн эхлэх цэг
 ├── internal/
-│   ├── app/                  # Dependency injection container
-│   ├── auth/                 # Authentication middleware
-│   ├── db/                   # Database connection
-│   ├── domain/               # Domain models/entities
+│   ├── app/                     # Dependency injection container
+│   ├── auth/                    # Authentication middleware
+│   ├── config/                  # Тохиргооны бүтэц
+│   ├── db/                      # Database холболт
+│   ├── domain/                  # Domain models/entities
 │   ├── http/
-│   │   ├── dto/              # Data transfer objects
-│   │   ├── handlers/         # HTTP handlers
-│   │   └── router/           # Route definitions
-│   ├── middleware/           # HTTP middlewares
-│   ├── repository/           # Data access layer
-│   └── service/              # Business logic layer
-├── docs/                     # Swagger generated docs
-├── .github/workflows/        # CI/CD pipelines
-└── docker/                   # Docker configurations
+│   │   ├── dto/                 # Data transfer objects
+│   │   ├── handlers/            # HTTP handlers
+│   │   └── router/              # Route тодорхойлолт
+│   ├── middleware/              # HTTP middlewares
+│   ├── repository/              # Data access layer
+│   └── service/                 # Business logic layer
+├── migrations/                  # Database migrations
+├── docs/                        # Swagger generated docs
+└── docker/                      # Docker тохиргоо
 ```
 
-## Quick Start
+## Түргэн эхлүүлэх
 
-### Prerequisites
+### Шаардлага
 
-- Go 1.22+
+- Go 1.25+
 - PostgreSQL 15+
-- Make (optional)
+- Redis 7+ (заавал биш)
+- Make (заавал биш)
 
-### Installation
+### Суулгалт
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd golang-template-v25-main
-
-# Install dependencies
+# Dependencies татах
 go mod download
 
-# Copy environment file
+# Environment файл хуулах
 cp .env.example .env
 
-# Run the server
+# .env файлыг засах
+
+# Server ажиллуулах
 go run cmd/server/main.go
 ```
 
-### Using Make
+### Make ашиглах
 
 ```bash
-make run        # Run the server
-make build      # Build binary
-make test       # Run unit tests
-make test-integration # Run integration tests (requires Docker)
-make test-all   # Run all tests
-make audit      # Run security audit (govulncheck) and linter
-make mocks      # Generate mocks (requires mockery)
-make lint       # Run linter
-make swagger    # Generate Swagger docs
+make run              # Server ажиллуулах
+make build            # Binary бүтээх
+make test             # Unit тест
+make test-integration # Integration тест (Docker шаардана)
+make test-all         # Бүх тест
+make audit            # Security audit + linter
+make mocks            # Mock үүсгэх (mockery)
+make lint             # Linter
+make swagger          # Swagger docs үүсгэх
+make migrate          # Database migration
 ```
 
-## Configuration
+## Тохиргоо
 
-Environment variables (`.env` file):
+`.env` файлын жишээ:
 
 ```env
 # Server
@@ -98,49 +100,76 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=password
-DB_NAME=template_db
+DB_NAME=gerege_db
+DB_SCHEMA=template_backend
+
+# Redis (заавал биш)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
 
 # Auth
 AUTH_CACHE_TTL=1h
 AUTH_CACHE_MAX=10000
+JWT_SECRET=your-secret-key
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=168h
 
-# TLS (optional)
+# Local Auth
+LOCAL_AUTH_ENABLED=true
+PASSWORD_MIN_LENGTH=8
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION=15m
+
+# TLS (production-д)
 TLS_CERT=
 TLS_KEY=
 ```
 
 ## API Endpoints
 
-### Public Routes
+### Нийтийн routes
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check with DB status |
-| GET | `/docs/*` | Swagger UI |
+| Method | Path | Тайлбар |
+|--------|------|---------|
+| GET | `/health` | Health check (DB статустай) |
+| GET | `/swagger/*` | Swagger UI |
 
-### Authentication
+### Нэвтрэлт (Authentication)
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path | Тайлбар |
+|--------|------|---------|
 | GET | `/auth/login` | SSO redirect |
 | GET | `/auth/callback` | OAuth2 callback |
-| POST | `/auth/logout` | Logout |
-| GET | `/auth/verify` | Token verification |
+| POST | `/auth/logout` | Гарах |
+| GET | `/auth/verify` | Token шалгах |
 
-### Protected Routes (require authentication)
+### Локал нэвтрэлт
 
-| Resource | Endpoints |
-|----------|-----------|
-| User | `/user/*` |
-| Role | `/role/*` |
-| Permission | `/permission/*` |
-| Organization | `/organization/*` |
-| System | `/system/*` |
-| Module | `/module/*` |
+| Method | Path | Тайлбар |
+|--------|------|---------|
+| POST | `/auth/local/login` | Нэвтрэх |
+| POST | `/auth/local/register` | Бүртгүүлэх |
+| POST | `/auth/local/verify-email` | Email баталгаажуулах |
+| POST | `/auth/local/resend-verification` | Баталгаажуулалт дахин илгээх |
+| POST | `/auth/local/forgot-password` | Нууц үг сэргээх хүсэлт |
+| POST | `/auth/local/reset-password` | Нууц үг шинэчлэх |
+| POST | `/auth/local/refresh-token` | Token шинэчлэх |
+
+### Хамгаалагдсан routes (нэвтрэлт шаардана)
+
+| Resource | Endpoints | Тайлбар |
+|----------|-----------|---------|
+| User | `/user/*` | Хэрэглэгч |
+| Role | `/role/*` | Роль |
+| Permission | `/permission/*` | Зөвшөөрөл |
+| Organization | `/organization/*` | Байгууллага |
+| System | `/system/*` | Систем |
+| Module | `/module/*` | Модуль |
 
 ## Health Check
 
-The `/health` endpoint returns comprehensive status information:
+`/health` endpoint нарийвчилсан статус буцаана:
 
 ```json
 {
@@ -148,7 +177,7 @@ The `/health` endpoint returns comprehensive status information:
   "data": {
     "status": "ok",
     "uptime": 3600,
-    "timestamp": "2025-01-10T12:00:00Z",
+    "timestamp": "2025-01-22T12:00:00Z",
     "database": {
       "status": "ok",
       "open_conns": 10,
@@ -159,51 +188,81 @@ The `/health` endpoint returns comprehensive status information:
 }
 ```
 
-## Development
+## Хөгжүүлэлт
 
-### Running Tests
+### Тест ажиллуулах
 
 ```bash
-# Run all tests
+# Бүх тест
 go test ./...
 
-# Run with coverage
+# Coverage-тэй
 go test -v -race -coverprofile=coverage.out ./...
 
-# View coverage report
+# Coverage тайлан харах
 go tool cover -html=coverage.out
 ```
 
 ### Linting
 
 ```bash
-# Install golangci-lint
+# golangci-lint суулгах
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-# Run linter
+# Lint ажиллуулах
 golangci-lint run
 ```
 
-### Generating Swagger Docs
+### Swagger Docs үүсгэх
 
 ```bash
-# Install swag
+# swag суулгах
 go install github.com/swaggo/swag/cmd/swag@latest
 
-# Generate docs
+# Docs үүсгэх
 swag init -g cmd/server/main.go -o docs
 ```
 
-## Deployment
+## Database Migration
 
-### Docker
+Migration файлууд `migrations/` хавтаст байрлана:
+
+```
+migrations/
+├── 001_extensions.sql          # Extensions, functions
+├── 002_core_tables.sql         # Systems, modules, permissions, roles
+├── 003_user_tables.sql         # Users, citizens
+├── 004_auth_tables.sql         # Credentials, sessions, tokens
+├── 005_organization_tables.sql # Organizations
+├── 006_platform_tables.sql     # App icons, vehicles, devices
+├── 007_content_tables.sql      # News, notifications, files, chat
+├── 008_logging_tables.sql      # Audit, API logs, errors
+├── 009_indexes.sql             # Performance indexes
+├── 010_seed_core.sql           # Systems, actions, modules seed
+├── 011_seed_permissions.sql    # Permissions seed
+├── 012_seed_roles.sql          # Roles seed
+├── 013_seed_organizations.sql  # Organizations seed
+└── 014_seed_users.sql          # Admin users seed
+```
+
+Migration ажиллуулах:
 
 ```bash
-# Build image
-docker build -t template-backend .
+make migrate
 
-# Run container
-docker run -p 8000:8000 --env-file .env template-backend
+# Эсвэл гараар
+psql -U postgres -d gerege_db -f migrations/001_extensions.sql
+# ... гэх мэт
+```
+
+## Docker
+
+```bash
+# Image бүтээх
+docker build -t open-gerege-backend .
+
+# Container ажиллуулах
+docker run -p 8000:8000 --env-file .env open-gerege-backend
 ```
 
 ### Docker Compose
@@ -214,26 +273,64 @@ docker-compose up -d
 
 ## CI/CD
 
-GitHub Actions workflows are configured for:
+GitHub Actions workflows:
 
-- **Lint**: golangci-lint checks
-- **Test**: Unit tests with PostgreSQL service
-- **Build**: Binary compilation
-- **Docker**: Image build and push
-- **Security**: Gosec and Trivy scans
+- **Lint** - golangci-lint шалгалт
+- **Test** - PostgreSQL service-тэй unit тест
+- **Build** - Binary compilation
+- **Docker** - Image build & push
+- **Security** - Gosec, Trivy scans
 
-## Contributing
+## Архитектур
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        HTTP Layer                           │
+│  ┌─────────┐  ┌─────────────┐  ┌──────────────────────┐    │
+│  │ Router  │──│ Middleware  │──│      Handlers        │    │
+│  └─────────┘  └─────────────┘  └──────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Service Layer                          │
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐    │
+│  │ AuthService  │  │ UserService │  │ OrgService      │    │
+│  └──────────────┘  └─────────────┘  └─────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Repository Layer                         │
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐    │
+│  │ AuthRepo     │  │ UserRepo    │  │ OrgRepo         │    │
+│  └──────────────┘  └─────────────┘  └─────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Domain Layer                           │
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐    │
+│  │ User         │  │ Role        │  │ Organization    │    │
+│  └──────────────┘  └─────────────┘  └─────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Data Layer                             │
+│  ┌──────────────────────┐  ┌──────────────────────────┐    │
+│  │     PostgreSQL       │  │         Redis            │    │
+│  └──────────────────────┘  └──────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
 
-## License
+## Лиценз
 
-This project is proprietary software of Gerege Core Team.
+MIT License - [LICENSE](../LICENSE) файлаас дэлгэрэнгүй үзнэ үү.
 
-## Authors
+## Зохиогчид
 
 - Bayarsaikhan Otgonbayar, CTO - Gerege Core Team
+- Sengum - Developer
+- Khuderchuluun - Developer
+- Gankhulug - Developer
