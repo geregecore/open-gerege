@@ -280,10 +280,17 @@ func (s *AuthService) VerifyBackupCode(ctx context.Context, mfaToken, code, ip, 
 		return nil, fmt.Errorf("failed to get backup codes: %w", err)
 	}
 
-	// Verify code
+	// Verify code using each code's unique salt
 	var matchedCode *domain.UserMFABackupCode
-	codeHash := s.hashBackupCode(code)
 	for i := range codes {
+		// Decode the stored salt
+		salt, err := base64.RawStdEncoding.DecodeString(codes[i].Salt)
+		if err != nil {
+			continue // Skip codes with invalid salt
+		}
+
+		// Hash the provided code with the stored salt
+		codeHash := s.hashBackupCodeWithSalt(code, salt)
 		if subtle.ConstantTimeCompare([]byte(codes[i].CodeHash), []byte(codeHash)) == 1 {
 			matchedCode = &codes[i]
 			break
@@ -506,9 +513,17 @@ func (s *AuthService) generateBackupCodes(ctx context.Context, userID int) ([]st
 	for i := 0; i < 10; i++ {
 		code := s.generateRandomCode()
 		codes[i] = code
+
+		// Generate unique random salt for each backup code
+		salt, saltBase64, err := s.generateBackupCodeSalt()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate salt: %w", err)
+		}
+
 		dbCodes[i] = domain.UserMFABackupCode{
 			UserID:   userID,
-			CodeHash: s.hashBackupCode(code),
+			CodeHash: s.hashBackupCodeWithSalt(code, salt),
+			Salt:     saltBase64,
 		}
 	}
 
@@ -949,10 +964,19 @@ func (s *AuthService) generateRandomCode() string {
 	return strings.ToUpper(base32.StdEncoding.EncodeToString(b)[:8])
 }
 
-func (s *AuthService) hashBackupCode(code string) string {
-	// Use argon2 for backup codes too
-	hash := argon2.IDKey([]byte(code), []byte("backup-code-salt"), 1, 64*1024, 4, 32)
+// hashBackupCodeWithSalt hashes a backup code using the provided salt
+func (s *AuthService) hashBackupCodeWithSalt(code string, salt []byte) string {
+	hash := argon2.IDKey([]byte(code), salt, 1, 64*1024, 4, 32)
 	return base64.RawStdEncoding.EncodeToString(hash)
+}
+
+// generateBackupCodeSalt generates a random salt for backup code hashing
+func (s *AuthService) generateBackupCodeSalt() ([]byte, string, error) {
+	salt := make([]byte, 16)
+	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+		return nil, "", err
+	}
+	return salt, base64.RawStdEncoding.EncodeToString(salt), nil
 }
 
 func (s *AuthService) logFailedLogin(ctx context.Context, userID *int, email, ip, userAgent, reason string) {

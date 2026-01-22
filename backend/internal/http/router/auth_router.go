@@ -95,6 +95,7 @@ func MapAuthRoutes(v1 fiber.Router, d *app.Dependencies, requireAuth fiber.Handl
 
 		// Rate limiter for auth endpoints (brute force protection)
 		authLimiter := middleware.AuthRateLimiter()
+		strictLimiter := middleware.StrictRateLimiter()
 
 		// Local login with email/password
 		// POST /auth/local/login → Authenticate with email/password
@@ -120,6 +121,36 @@ func MapAuthRoutes(v1 fiber.Router, d *app.Dependencies, requireAuth fiber.Handl
 		// Refresh session (protected by session auth)
 		// POST /auth/local/refresh → Extend session expiry
 		router.Post("/refresh", sessionAuth, localAuthHandler.RefreshSession)
+
+		// ------------------------------------------------------------
+		// REGISTRATION ROUTES (Public)
+		// ------------------------------------------------------------
+		// Registration handler - only create if registration service exists
+		if d.Service.Registration != nil {
+			registrationHandler := handlers.NewRegistrationHandler(d.Service.Registration)
+
+			// User registration
+			// POST /auth/local/register → Create new user account
+			// Rate limited: Strict (3 req/5min) to prevent abuse
+			router.Post("/register", strictLimiter, registrationHandler.Register)
+
+			// Email verification
+			// POST /auth/local/verify-email → Verify email with token
+			router.Post("/verify-email", authLimiter, registrationHandler.VerifyEmail)
+
+			// Resend verification email
+			// POST /auth/local/resend-verification → Resend verification email
+			// Rate limited: Strict (3 req/5min) to prevent spam
+			router.Post("/resend-verification", strictLimiter, registrationHandler.ResendVerification)
+
+			// Password reset flow
+			// POST /auth/local/forgot-password → Request password reset email
+			// Rate limited: Strict (3 req/5min) to prevent abuse
+			router.Post("/forgot-password", strictLimiter, registrationHandler.ForgotPassword)
+
+			// POST /auth/local/reset-password → Reset password with token
+			router.Post("/reset-password", authLimiter, registrationHandler.ResetPassword)
+		}
 	})
 
 	// ------------------------------------------------------------

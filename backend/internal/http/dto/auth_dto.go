@@ -173,3 +173,59 @@ type SecurityAuditResponse struct {
 	Entries []SecurityAuditEntry `json:"entries"`
 	Total   int                  `json:"total"`
 }
+
+// ============================================================
+// REGISTRATION DTOs
+// ============================================================
+
+// RegisterRequest нь бүртгүүлэх хүсэлт
+type RegisterRequest struct {
+	Email           string `json:"email"            validate:"required,email"`
+	Password        string `json:"password"         validate:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=Password"`
+	FirstName       string `json:"first_name"       validate:"required,min=1,max=150"`
+	LastName        string `json:"last_name"        validate:"required,min=1,max=150"`
+	AcceptTerms     bool   `json:"accept_terms"     validate:"required,eq=true"`
+}
+
+// RegisterResponse нь бүртгүүлэх хариу
+type RegisterResponse struct {
+	UserID           int    `json:"user_id"`
+	Email            string `json:"email"`
+	VerificationSent bool   `json:"verification_sent"`
+	Message          string `json:"message"`
+}
+
+// VerifyEmailRequest нь email баталгаажуулах хүсэлт
+type VerifyEmailRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
+// VerifyEmailResponse нь email баталгаажуулах хариу
+type VerifyEmailResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// ResendVerificationRequest нь verification email дахин илгээх хүсэлт
+type ResendVerificationRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ForgotPasswordRequest нь нууц үг мартсан хүсэлт
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ResetPasswordConfirmRequest нь нууц үг шинэчлэх хүсэлт
+type ResetPasswordConfirmRequest struct {
+	Token           string `json:"token"            validate:"required"`
+	Password        string `json:"password"         validate:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=Password"`
+}
+
+// GenericResponse нь ерөнхий хариу (success/error message)
+type GenericResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}

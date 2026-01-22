@@ -142,6 +142,10 @@ type RepoContainer struct {
 	// Tables: user_credentials, user_mfa_totp, sessions, login_history, etc.
 	Auth repository.AuthRepository
 
+	// Registration нь registration-related CRUD operations.
+	// Tables: email_verification_tokens, password_reset_tokens
+	Registration repository.RegistrationRepository
+
 	// ============================================================
 	// SYSTEM & MODULE REPOSITORIES
 	// ============================================================
@@ -271,6 +275,12 @@ type ServiceContainer struct {
 	// - Session CRUD
 	// - MFA token storage
 	SessionStore service.SessionStore
+
+	// Registration нь user registration service.
+	// - User signup
+	// - Email verification
+	// - Password reset
+	Registration *service.RegistrationService
 
 	// ============================================================
 	// SYSTEM & MODULE SERVICES
@@ -414,9 +424,10 @@ func NewDependencies(db *gorm.DB, cfg *config.Config, log *zap.Logger, authCache
 	// Зарим repository-ууд config-оос нэмэлт тохиргоо авна.
 	repo := &RepoContainer{
 		// User & Auth
-		User:     repository.NewUserRepository(db),
-		UserRole: repository.NewUserRoleRepository(db),
-		Auth:     repository.NewAuthRepository(db),
+		User:         repository.NewUserRepository(db),
+		UserRole:     repository.NewUserRoleRepository(db),
+		Auth:         repository.NewAuthRepository(db),
+		Registration: repository.NewRegistrationRepository(db),
 
 		// System & Module
 		System: repository.NewSystemRepository(db),
@@ -516,6 +527,16 @@ func NewDependencies(db *gorm.DB, cfg *config.Config, log *zap.Logger, authCache
 
 	// Create Auth service (depends on repo.Auth, sessionStore, and authCfg)
 	svc.Auth = service.NewAuthService(repo.Auth, sessionStore, &authCfg.LocalAuth, log)
+
+	// Create Registration service (depends on repo.Auth, repo.User, repo.Registration, svc.Auth)
+	svc.Registration = service.NewRegistrationService(
+		repo.Auth,
+		repo.User,
+		repo.Registration,
+		svc.Auth,
+		&authCfg.LocalAuth,
+		log,
+	)
 
 	// ============================================================
 	// STEP 3: Create permission cache

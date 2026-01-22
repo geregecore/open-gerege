@@ -168,6 +168,9 @@ type UserMFABackupCode struct {
 	// CodeHash нь hash-лэгдсэн backup code
 	CodeHash string `json:"-" gorm:"not null"`
 
+	// Salt нь backup code hash-д ашиглагдсан random salt (base64 encoded)
+	Salt string `json:"-" gorm:"type:varchar(64)"`
+
 	// UsedAt нь код ашиглагдсан огноо (NULL бол ашиглаагүй)
 	UsedAt *time.Time `json:"used_at"`
 
@@ -426,6 +429,141 @@ type UserStatusInfo struct {
 
 	// LoginCount нь нийт нэвтэрсэн тоо
 	LoginCount int `json:"login_count" gorm:"default:0"`
+}
+
+// ============================================================
+// EMAIL VERIFICATION TOKEN ENTITY
+// ============================================================
+
+// EmailVerificationToken нь email баталгаажуулах токен хадгална.
+// Table: email_verification_tokens
+type EmailVerificationToken struct {
+	// ID нь primary key
+	ID int `json:"id" gorm:"primaryKey"`
+
+	// UserID нь users table руу foreign key
+	UserID int `json:"user_id" gorm:"not null"`
+
+	// Token нь unique token string
+	Token string `json:"-" gorm:"uniqueIndex;not null"`
+
+	// ExpiresAt нь токен дуусах хугацаа
+	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
+
+	// UsedAt нь токен ашиглагдсан хугацаа
+	UsedAt *time.Time `json:"used_at"`
+
+	// ExtraFields нь audit талбаруудыг агуулна
+	ExtraFields
+
+	// User нь холбогдсон хэрэглэгч
+	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;references:Id"`
+}
+
+// TableName returns the table name for GORM
+func (EmailVerificationToken) TableName() string {
+	return "email_verification_tokens"
+}
+
+// IsExpired checks if the token has expired
+func (t *EmailVerificationToken) IsExpired() bool {
+	return time.Now().After(t.ExpiresAt)
+}
+
+// IsUsed checks if the token has been used
+func (t *EmailVerificationToken) IsUsed() bool {
+	return t.UsedAt != nil
+}
+
+// ============================================================
+// PASSWORD RESET TOKEN ENTITY
+// ============================================================
+
+// PasswordResetToken нь нууц үг сэргээх токен хадгална.
+// Table: password_reset_tokens
+type PasswordResetToken struct {
+	// ID нь primary key
+	ID int `json:"id" gorm:"primaryKey"`
+
+	// UserID нь users table руу foreign key
+	UserID int `json:"user_id" gorm:"not null"`
+
+	// Token нь unique token string
+	Token string `json:"-" gorm:"uniqueIndex;not null"`
+
+	// ExpiresAt нь токен дуусах хугацаа
+	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
+
+	// UsedAt нь токен ашиглагдсан хугацаа
+	UsedAt *time.Time `json:"used_at"`
+
+	// ExtraFields нь audit талбаруудыг агуулна
+	ExtraFields
+
+	// User нь холбогдсон хэрэглэгч
+	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;references:Id"`
+}
+
+// TableName returns the table name for GORM
+func (PasswordResetToken) TableName() string {
+	return "password_reset_tokens"
+}
+
+// IsExpired checks if the token has expired
+func (t *PasswordResetToken) IsExpired() bool {
+	return time.Now().After(t.ExpiresAt)
+}
+
+// IsUsed checks if the token has been used
+func (t *PasswordResetToken) IsUsed() bool {
+	return t.UsedAt != nil
+}
+
+// ============================================================
+// REFRESH TOKEN ENTITY
+// ============================================================
+
+// RefreshToken нь refresh token хадгална.
+// Table: refresh_tokens
+type RefreshToken struct {
+	// ID нь primary key
+	ID int `json:"id" gorm:"primaryKey"`
+
+	// UserID нь users table руу foreign key
+	UserID int `json:"user_id" gorm:"not null"`
+
+	// TokenHash нь hash-лэгдсэн token
+	TokenHash string `json:"-" gorm:"uniqueIndex;not null"`
+
+	// SessionID нь session-тэй холбоотой
+	SessionID string `json:"session_id" gorm:"not null"`
+
+	// ExpiresAt нь токен дуусах хугацаа
+	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
+
+	// RevokedAt нь токен цуцлагдсан хугацаа
+	RevokedAt *time.Time `json:"revoked_at"`
+
+	// ExtraFields нь audit талбаруудыг агуулна
+	ExtraFields
+
+	// User нь холбогдсон хэрэглэгч
+	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;references:Id"`
+}
+
+// TableName returns the table name for GORM
+func (RefreshToken) TableName() string {
+	return "refresh_tokens"
+}
+
+// IsExpired checks if the token has expired
+func (t *RefreshToken) IsExpired() bool {
+	return time.Now().After(t.ExpiresAt)
+}
+
+// IsRevoked checks if the token has been revoked
+func (t *RefreshToken) IsRevoked() bool {
+	return t.RevokedAt != nil
 }
 
 // ============================================================
